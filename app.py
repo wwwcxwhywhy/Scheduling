@@ -68,20 +68,6 @@ if menu == "查詢班表":
         else:
             st.warning("找不到此員工的排班資料")
 
-elif menu == "申請換班":
-    st.header("換班申請表單")
-    with st.form("shift_form"):
-        emp_id = st.text_input("員工ID")
-        date = st.date_input("想換的日期")
-        shift = st.radio("班別", ["早班", "晚班"])
-        reason = st.text_area("換班原因")
-        submitted = st.form_submit_button("送出申請")
-        if submitted:
-            with open("swap_requests.csv", "a", encoding="utf-8") as f:
-                f.write(f"{emp_id},{date},{shift},{reason}\n")
-            upload_to_github("swap_requests.csv", "swap_requests.csv", "新增換班申請")
-            st.success("已送出換班申請")
-
 elif menu == "輸入員工資料":
     st.header("新增員工")
     with st.form("add_emp_form"):
@@ -100,7 +86,7 @@ elif menu == "輸入員工資料":
                 df = new_row
             df.to_csv("employees.csv", index=False, encoding="utf-8-sig")
             upload_to_github("employees.csv", "employees.csv", "新增員工資料")
-            st.success("已成功新增員工")
+            st.success("已成功新增員工，請回到『產生班表』以更新排班")
 
 elif menu == "產生班表":
     st.header("自動產生班表")
@@ -115,6 +101,7 @@ elif menu == "產生班表":
             emp_df["可上班班別（早/晚）"] = emp_df["可上班班別（早/晚）"].astype(str).str.split(",")
 
             schedule = []
+            debug_info = []
             for i, row in demand_df.iterrows():
                 date = pd.to_datetime(row["Date"]).strftime("%Y-%m-%d")
                 weekday = str(i + 1)
@@ -125,6 +112,9 @@ elif menu == "產生班表":
                                 emp_df["可上班班別（早/晚）"].apply(lambda x: "早" in x)]
                 e_cand = emp_df[emp_df["可上班日（1～7）"].apply(lambda x: weekday in x) &
                                 emp_df["可上班班別（早/晚）"].apply(lambda x: "晚" in x)]
+
+                debug_info.append((date, "早班", list(m_cand["員工ID"])))
+                debug_info.append((date, "晚班", list(e_cand["員工ID"])))
 
                 m_sel = m_cand.sample(n=min(len(m_cand), m_need), replace=False)
                 e_sel = e_cand.sample(n=min(len(e_cand), e_need), replace=False)
@@ -144,15 +134,20 @@ elif menu == "產生班表":
             with open("schedule.csv", "rb") as f:
                 st.download_button("下載班表 CSV", f, file_name="schedule.csv", mime="text/csv")
 
-            # ➕ 額外 debug：哪些人有資格卻沒排到？
             排入ID = set(result_df["員工ID"])
             所有人ID = set(emp_df["員工ID"])
             未排入 = 所有人ID - 排入ID
 
             if 未排入:
-                st.warning(f"以下員工雖符合資格但這輪未被排入（可能因為人數已滿、隨機沒選中）：{', '.join(sorted(未排入))}")
-            else:
-                st.info("所有符合條件的人都已排入")
+                st.warning(f"以下員工雖符合資格但這輪未被排入（可能因為人數已滿或隨機未選中）：{', '.join(sorted(未排入))}")
+
+            with st.expander("🪪 查看每班候選名單（Debug 用）"):
+                for date, shift, ids in debug_info:
+                    st.write(f"{date} {shift} 候選員工：{', '.join(ids)}")
+
+        except Exception as e:
+            st.error(f"發生錯誤：{e}")
+
 
         except Exception as e:
             st.error(f"發生錯誤：{e}")
