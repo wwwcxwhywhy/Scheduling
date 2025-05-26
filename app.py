@@ -141,7 +141,7 @@ elif menu == "產生班表":
             if 未排入:
                 st.warning(f"以下員工雖符合資格但這輪未被排入（可能因為人數已滿或隨機未選中）：{', '.join(sorted(未排入))}")
 
-            with st.expander("🪪 查看每班候選名單（Debug 用）"):
+            with st.expander("🪪 查看每班候選名單"):
                 for date, shift, ids in debug_info:
                     st.write(f"{date} {shift} 候選員工：{', '.join(ids)}")
 
