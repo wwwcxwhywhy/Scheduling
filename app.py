@@ -53,7 +53,7 @@ if menu == "查詢班表":
     st.header("查詢排班")
     if st.button("🔁 重新載入 GitHub 班表資料"):
         st.cache_data.clear()
-        st.experimental_rerun()
+        st.rerun()
 
     df = load_schedule()
     emp_id = st.text_input("請輸入員工ID（例如：E001）")
