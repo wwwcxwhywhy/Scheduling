@@ -45,7 +45,7 @@ menu = st.sidebar.selectbox("選擇功能", ["查詢班表", "申請換班", "�
 @st.cache_data
 def load_schedule():
     df = pd.read_csv(SCHEDULE_CSV_URL, encoding="utf-8-sig")
-    df.columns = df.columns.str.replace('\ufeff', '')  # 清除 BOM
+    df.columns = df.columns.str.replace('\ufeff', '')
     df["Date"] = pd.to_datetime(df["Date"])
     return df
 
@@ -83,8 +83,8 @@ elif menu == "輸入員工資料":
     with st.form("add_emp_form"):
         emp_id = st.text_input("員工ID（例如 E001）")
         name = st.text_input("員工姓名")
-        work_days = st.multiselect("可上班日", options=["1", "2", "3", "4", "5", "6", "7"])
-        shifts = st.multiselect("可上班班別", options=["早", "晚"])
+        work_days = st.multiselect("可上班日", ["1", "2", "3", "4", "5", "6", "7"])
+        shifts = st.multiselect("可上班班別", ["早", "晚"])
         submitted = st.form_submit_button("新增員工")
         if submitted:
             new_row = pd.DataFrame([[emp_id.strip().upper(), name.strip(), ",".join(work_days), ",".join(shifts)]],
@@ -139,6 +139,16 @@ elif menu == "產生班表":
 
             with open("schedule.csv", "rb") as f:
                 st.download_button("下載班表 CSV", f, file_name="schedule.csv", mime="text/csv")
+
+            # ➕ 額外 debug：哪些人有資格卻沒排到？
+            排入ID = set(result_df["員工ID"])
+            所有人ID = set(emp_df["員工ID"])
+            未排入 = 所有人ID - 排入ID
+
+            if 未排入:
+                st.warning(f"以下員工雖符合資格但這輪未被排入（可能因為人數已滿、隨機沒選中）：{', '.join(sorted(未排入))}")
+            else:
+                st.info("所有符合條件的人都已排入")
 
         except Exception as e:
             st.error(f"發生錯誤：{e}")
