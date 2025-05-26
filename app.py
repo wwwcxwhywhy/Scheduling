@@ -42,22 +42,35 @@ st.title("SmartScheduler 2.0 - 員工排班查詢")
 
 menu = st.sidebar.selectbox("選擇功能", ["查詢班表", "申請換班", "輸入員工資料", "產生班表"])
 
+# 查詢資料來源切換
+data_source = st.sidebar.radio("資料來源", ["GitHub（有延遲）", "本地即時排班結果"], index=0)
+
 @st.cache_data(ttl=5)
-def load_schedule():
+def load_schedule_from_github():
     df = pd.read_csv(SCHEDULE_CSV_URL, encoding="utf-8-sig")
+    df.columns = df.columns.str.replace('\ufeff', '')
+    df["Date"] = pd.to_datetime(df["Date"])
+    return df
+
+def load_schedule_from_local():
+    df = pd.read_csv("schedule.csv", encoding="utf-8-sig")
     df.columns = df.columns.str.replace('\ufeff', '')
     df["Date"] = pd.to_datetime(df["Date"])
     return df
 
 if menu == "查詢班表":
     st.header("查詢排班")
-    if st.button("🔁 重新載入 GitHub 班表資料"):
-        st.cache_data.clear()
-        st.rerun()
+    if data_source == "GitHub（有延遲）":
+        if st.button("🔁 重新載入 GitHub 班表資料"):
+            st.cache_data.clear()
+            st.rerun()
+        df = load_schedule_from_github()
+        st.info("目前查詢資料來源為 GitHub，可能有數十秒更新延遲")
+    else:
+        df = load_schedule_from_local()
+        st.success("目前查詢資料來源為本地 schedule.csv，為最新即時結果")
 
-    df = load_schedule()
     emp_id = st.text_input("請輸入員工ID（例如：E001）")
-
     if emp_id:
         emp_id = emp_id.strip().upper()
         df["員工ID"] = df["員工ID"].astype(str).str.strip().str.upper()
@@ -144,10 +157,6 @@ elif menu == "產生班表":
             with st.expander("🪪 查看每班候選名單"):
                 for date, shift, ids in debug_info:
                     st.write(f"{date} {shift} 候選員工：{', '.join(ids)}")
-
-        except Exception as e:
-            st.error(f"發生錯誤：{e}")
-
 
         except Exception as e:
             st.error(f"發生錯誤：{e}")
