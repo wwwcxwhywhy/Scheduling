@@ -42,7 +42,7 @@ st.title("SmartScheduler 2.0 - 員工排班查詢")
 
 menu = st.sidebar.selectbox("選擇功能", ["查詢班表", "申請換班", "輸入員工資料", "產生班表"])
 
-@st.cache_data
+@st.cache_data(ttl=5)
 def load_schedule():
     df = pd.read_csv(SCHEDULE_CSV_URL, encoding="utf-8-sig")
     df.columns = df.columns.str.replace('\ufeff', '')
@@ -51,6 +51,10 @@ def load_schedule():
 
 if menu == "查詢班表":
     st.header("查詢排班")
+    if st.button("🔁 重新載入 GitHub 班表資料"):
+        st.cache_data.clear()
+        st.experimental_rerun()
+
     df = load_schedule()
     emp_id = st.text_input("請輸入員工ID（例如：E001）")
 
