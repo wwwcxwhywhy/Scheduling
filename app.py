@@ -1,13 +1,18 @@
 import streamlit as st
 import pandas as pd
 
+# ✅ GitHub Raw 路徑
+EMPLOYEE_CSV_URL = "https://raw.githubusercontent.com/wwwcxwhywhy/Scheduling/main/employees.csv"
+SCHEDULE_CSV_URL = "https://raw.githubusercontent.com/wwwcxwhywhy/Scheduling/main/schedule.csv"
+DEMAND_CSV_URL = "https://raw.githubusercontent.com/wwwcxwhywhy/Scheduling/main/shift_demand.csv"
+
 st.title("SmartScheduler 2.0 - 員工排班查詢")
 
 menu = st.sidebar.selectbox("選擇功能", ["查詢班表", "申請換班", "輸入員工資料", "產生班表"])
 
 @st.cache_data
 def load_schedule():
-    df = pd.read_csv("schedule.csv", encoding="utf-8-sig")
+    df = pd.read_csv(SCHEDULE_CSV_URL, encoding="utf-8-sig")
     df.columns = df.columns.str.replace('\ufeff', '')  # 清除 BOM
     df["Date"] = pd.to_datetime(df["Date"])
     return df
@@ -16,7 +21,7 @@ if menu == "查詢班表":
     st.header("查詢排班")
     df = load_schedule()
     emp_id = st.text_input("請輸入員工ID（例如：E001）")
-    
+
     if emp_id:
         emp_id = emp_id.strip().upper()
         df["員工ID"] = df["員工ID"].astype(str).str.strip().str.upper()
@@ -52,9 +57,9 @@ elif menu == "輸入員工資料":
             new_row = pd.DataFrame([[emp_id.strip().upper(), name.strip(), ",".join(work_days), ",".join(shifts)]],
                                    columns=["員工ID", "員工姓名", "可上班日（1～7）", "可上班班別（早/晚）"])
             try:
-                df = pd.read_csv("employees.csv", encoding="utf-8-sig")
+                df = pd.read_csv(EMPLOYEE_CSV_URL, encoding="utf-8-sig")
                 df = pd.concat([df, new_row], ignore_index=True)
-            except FileNotFoundError:
+            except Exception:
                 df = new_row
             df.to_csv("employees.csv", index=False, encoding="utf-8-sig")
             st.success("已成功新增員工")
@@ -63,8 +68,8 @@ elif menu == "產生班表":
     st.header("自動產生班表")
     if st.button("點我排班！"):
         try:
-            emp_df = pd.read_csv("employees.csv", encoding="utf-8-sig")
-            demand_df = pd.read_csv("shift_demand.csv", encoding="utf-8")
+            emp_df = pd.read_csv(EMPLOYEE_CSV_URL, encoding="utf-8-sig")
+            demand_df = pd.read_csv(DEMAND_CSV_URL, encoding="utf-8")
 
             emp_df.columns = emp_df.columns.str.replace('\ufeff', '')
             emp_df["員工ID"] = emp_df["員工ID"].astype(str).str.strip().str.upper()
