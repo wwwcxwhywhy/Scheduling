@@ -91,7 +91,7 @@ elif menu == "產生班表":
                 for _, emp in e_sel.iterrows():
                     schedule.append({"Date": date, "班別": "晚班", "員工ID": emp["員工ID"], "員工姓名": emp["員工姓名"]})
 
-            result_df = pd.DataFrame(schedule)
+            result_df = pd.DataFrame(schedule, columns=["Date", "班別", "員工ID", "員工姓名"])
             result_df["Date"] = pd.to_datetime(result_df["Date"]).dt.strftime("%Y-%m-%d")
             result_df.to_csv("schedule.csv", index=False, encoding="utf-8-sig")
 
