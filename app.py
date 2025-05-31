@@ -12,6 +12,7 @@ GITHUB_TOKEN = st.secrets["github_token"]
 EMPLOYEE_CSV_URL = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/employees.csv"
 SCHEDULE_CSV_URL = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/schedule.csv"
 DEMAND_CSV_URL = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/shift_demand.csv"
+SWAP_CSV_URL = f"https://raw.githubusercontent.com/{REPO}/{BRANCH}/swap_requests.csv"
 
 # 上傳至 GitHub 的函數
 def upload_to_github(local_path, repo_path, commit_msg):
@@ -68,6 +69,28 @@ if menu == "查詢班表":
             st.dataframe(filtered)
         else:
             st.warning("找不到此員工的排班資料")
+
+elif menu == "申請換班":
+    st.header("換班申請表單")
+    with st.form("shift_form"):
+        emp_id = st.text_input("員工ID")
+        date = st.date_input("想換的日期")
+        shift = st.radio("班別", ["早班", "晚班"])
+        reason = st.text_area("換班原因")
+        submitted = st.form_submit_button("送出申請")
+
+        if submitted:
+            new_row = pd.DataFrame([[emp_id, date, shift, reason]],
+                                   columns=["員工ID", "日期", "班別", "換班原因"])
+            try:
+                old_df = pd.read_csv(SWAP_CSV_URL)
+                combined_df = pd.concat([old_df, new_row], ignore_index=True)
+            except Exception:
+                combined_df = new_row
+
+            combined_df.to_csv("swap_requests.csv", index=False, encoding="utf-8-sig")
+            upload_to_github("swap_requests.csv", "swap_requests.csv", "新增換班申請")
+            st.success("已送出換班申請")
 
 elif menu == "輸入員工資料":
     st.header("新增員工")
